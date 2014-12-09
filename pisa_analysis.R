@@ -1,10 +1,22 @@
-# pisa_data_site <- htmlTreeParse("http://beta.icm.edu.pl/PISAcontest/data/", useInternalNodes = T)
-# data_links <- xpathApply(xmlRoot(pisa_data_site), "//a", xmlGetAttr, "href")
-# lapply(data_links, function(i) download.file(paste0("http://beta.icm.edu.pl/PISAcontest/data/", i), paste0(".",i))
-#load("./data/Student2012.rda")
-#load("./data/Student2012dict.rda")
+library(dplyr)
+library(XML)
+htmlTreeParse("http://beta.icm.edu.pl/PISAcontest/data/", useInternalNodes = T) %>% 
+  xmlRoot %>% 
+  xpathApply("//a", xmlGetAttr, "href") %>% 
+  lapply(function(i) download.file(paste0("http://beta.icm.edu.pl/PISAcontest/data/", i), paste0(".",i)))
+
+oowd = getwd()
+setwd("/media/robert/")
+
+student2012 = list.files()[1] %>%
+  paste0("/data/Pisa/student2012.csv") %>%
+  read.csv
+
+student2012dict = list.files()[1] %>%
+  paste0("/data/Pisa/student2012dict.csv") %>%
+  read.csv
+
 library(ggplot2)
-library(plyr)
 
 NAstudent <- student2012[student2012$CNT %in% c("Florida (USA)","Connecticut (USA)", "Massachusetts (USA)", "Canada", "Mexico", "United States of America"),]
 rm(student2012)

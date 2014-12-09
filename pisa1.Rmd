@@ -1,0 +1,60 @@
+---
+title: "PISA Math Analysis Round 1"
+author: "Robert Glorioso"
+date: "11/13/2014"
+output: html_document
+---
+
+Let's look at how 15 year olds throughout the world feel about learning.  Our data comes from the Programme for International Student Assessment (PISA). Information about this organization is located at <http://www.oecd.org/pisa/pisaproducts/>. Here is an R script to get this data into R:
+
+```{r, eval = F}
+library(dplyr)
+library(XML)
+htmlTreeParse("http://beta.icm.edu.pl/PISAcontest/data/", useInternalNodes = T) %>% 
+  xmlRoot %>% 
+  xpathApply("//a", xmlGetAttr, "href") %>% 
+  lapply(function(i) download.file(paste0("http://beta.icm.edu.pl/PISAcontest/data/", i), paste0(".",i)))
+```
+
+The above code will download the PISA dataset files to your current working directory.
+
+We are most interested in the student2012 data. This is a medium sized dataset (2.7 gb). It contains 485490 observations of 635 variables. We will work with a subset of the data - students in North America:
+
+```{r, eval = F}
+load("student2012.rda")
+load("student2012dict.rda")
+student2012 = student2012[student2012$CNT %in% c("Florida (USA)","Connecticut (USA)", "Massachusetts (USA)", "Canada", "Mexico"),]
+student2012dict = as.data.frame(sapply(student2012dict, as.character), stringsAsFactors = F) #removes factors for printing
+```
+
+Column names are encoded. A function to access the meaning of a column names is helpful:
+
+```{r}
+colDecode = function(colName){
+  if(!is.numeric(colName)) colName = which(student2012dict[,1] == colName)
+  if(length(colName) == 0 || colName < 1 || colName > 635) stop("Invalid Column")
+  if(!is.factor(student2012[,colName])) cat(student2012dict[colName,], "\nQuantiles:\n",quantile(student2012[,colName], na.rm = T), "\n")
+    else cat(student2012dict[colName,1], "\n", student2012dict[colName,2], "\nFactor Levels:\n", paste(levels(student2012[,colName]), collapse = "\n"), "\n")
+}
+colDecode(67)
+colDecode(69)
+colDecode(70)
+```
+
+We'll make a linear model with these three variables as the predictors:
+
+```{r}
+mathLM1 = lm(PV1MATH ~ ST29Q01 + ST29Q03 + ST29Q04, data = student2012)
+summary(mathLM1)
+```
+
+Notice that the level "agree" is missing from the summary. That is because a linear model will absorb the first level of a categorical variable into the intercept term. We have to keep this in mind when interpreting the coefficients.
+
+We look at the first variable "Math Interest - Enjoy Reading". It looks like there's an increase of 11 points in the score of those who answer "disagree" from those who answered "agree". We can examine a plot of this data to visualize the trend.
+
+```{r echo = F}
+library(ggplot2)
+gg = ggplot(student2012, aes(x = ST29Q01, y = PV1MATH)) + geom_boxplot(colour = "blue", fill = "lightblue", notch = T, varwidth = T, outlier.size = .2, outlier.colour = "blue")
+gg
+```
+

@@ -1,0 +1,48 @@
+---
+title: "PISA Math Analysis Round 2"
+author: "Robert"
+date: "11/27/2014"
+output: html_document
+---
+
+We continue today with our analysis of the PISA student.
+
+If you haven't read from the start, follow this [link](2014/11/PISA-analysis-round-1/).
+
+We can update our model by using the `update` function.
+
+```{r}
+load("~/Github/pisa/student2012_NA.rda")
+mathLM2 = update(object = mathLM1, formula. = . ~ . + CNT)
+```
+
+The `. ~ .` in the new formula means to use all the variables that were on the left hand and right hand side. The `+ CNT` adds the variable for Region. We can compare these nested models with a $\chi^2$ test.
+
+```{r}
+anova(mathLM1, mathLM2, test="Chisq")
+```
+
+The library `sjPlot` is a great resource for visualizing these models. The author's [blog](http://strengejacke.wordpress.com/2013/03/22/plotting-lm-and-glm-models-with-ggplot-rstats/) has more details. Here's an example of the `sjp.lm` function for plotting coefficients:
+
+```{r, echo=FALSE}
+library(sjPlot)
+sjp.lm(mathLM1)
+```
+```{r, echo=FALSE}
+sjp.lm(mathLM2)
+```
+
+Another way to perform anova on nested models is by using `drop1` or `add1`.
+
+```{r}
+add1(mathLM2, scope = ~.^2, test="Chisq")
+```
+
+The `scope` argument is what determines what variables are added or subtracted. The `~.^2` means we are adding all variables and their interactions with each other. We can use the `step` function to choose what variables to add and/or drop for us. 
+
+```{r}
+mathLM3 = update(mathLM2, direction = "both")
+summary(mathLM3)
+```
+
+It may be more practical to add in variables/interactions one at a time and see how the model changes. Many things have yet to be discovered in the PISA dataset. I am looking forward to finding out how attitudes towards math vary across different regions. It is apparent that geography plays an important role in determine mathematical aptitude, but should that be the case? More to come...
